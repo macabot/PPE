@@ -9,18 +9,36 @@ def extract_phrase_pair_freqs(alignments, language1, language2):
     language2 = open(language2, 'r')
     return phrase_pairs
 
-def extract_phrase_pairs(alignments):
+def extract_alignments(word_alignments):
+    phrase_alignment_list = []
     # First form words into phrase pairs
-    while alignments:
-        rect_init = alignments.pop()
-        rect_exp = [[rect_init[0]], [rect_init[1]]]
-        while not (rect_exp[0] or rect_exp[1]):
-            added_points = [(x,y) for (x,y) in alignments if (x in rect_exp[0] or y in rect_exp[1])]
-            rect.append(added_points)
-            for point in added_points:
-                alignments.delete()
-            rect_exp = rect_expansions(rect)
+    while len(word_alignments):
+        phrase_alignment = []
+        phrase_alignment_init = word_alignments.pop()
+        phrase_alignment_exp = [[phrase_alignment_init[0]], [phrase_alignment_init[1]]]
+        while phrase_alignment_exp[0] or phrase_alignment_exp[1]:
+            added_points = [(x,y) for (x,y) in word_alignments if (x in phrase_alignment_exp[0] or y in phrase_alignment_exp[1])]
+            phrase_alignment.extend(added_points)
+            word_alignments -= added_points
+            phrase_alignment_exp = phrase_alignment_expansions(phrase_alignment)
+        phrase_alignment_list.append(phrase_range(phrase_alignment))
     #Then loop over phrase pairs to join them together into new ones
+    phrase_queue = list(phrase_alignment_list)
+    while len(phrase_queue):
+        p1 = phrase_queue.pop()
+        new_p3 = []
+        for p2 in phrase_queue:
+            p3 = None
+            #p2 above, to the left of p1
+            #if p1[0:2] == p2[2:4]:
+            #    p3 = p2[0], p2[1], p1[2], p1[3]
+            #elif p1[2] == p2[0] and p1[3]
+            if p3:
+                new_p3.append(p3)
+        phrase_alignment_list.append(new_p3)
+        phrase_queue.append(new_p3)
+
+    return phrase_alignment_list
 
 if __name__=='__main__':
     arg_parser = argparse.ArgumentParser()
