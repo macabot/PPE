@@ -8,6 +8,31 @@ def extract_phrase_pair_freqs(alignments, language1, language2):
     language1 = open(language1, 'r')
     language2 = open(language2, 'r')
     return phrase_pairs
+    
+def str_to_alignments(string):
+    string_list = string.strip().split()
+    alignments = set([])
+    for a_str in string_list:
+        a1_str, a2_str = a_str.split('-')
+        alignments.add((int(a1_str), int(a2_str)))
+
+    return alignments
+    
+def rect_expansions(alignments):
+    min1 = min(a1 for (a1, a2) in alignments)
+    min2 = min(a2 for (a1, a2) in alignments)
+    max1 = max(a1 for (a1, a2) in alignments)
+    max2 = max(a2 for (a1, a2) in alignments)
+
+    range1 = range(min1, max1+1)
+    range2 = range(min2, max2+1)
+    for a1, a2 in alignments:
+        if a1 in range1:
+            range1.remove(a1)
+        if a2 in range2:
+            range2.remove(a2)
+
+    return range1, range2
 
 def extract_alignments(word_alignments):
     phrase_alignment_list = []
