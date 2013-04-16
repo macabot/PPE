@@ -3,17 +3,49 @@
 import argparse
 from collections import Counter
 
+def conditional_probabilities(phrase_pair_freqs, 
+                              l1_phrase_freqs, l2_phrase_freqs):
+    l1_given_l2 = {}
+    l2_given_l1 = {}
+    for phrase_pair, freq in phrase_pair_freqs.iteritems():
+        l1_given_l2[phrase_pair] = freq / l1_phrase_freqs[phrase_pair[0]]
+        l2_given_l1[phrase_pair] = freq / l2_phrase_freqs[phrase_pair[1]]
+
+    return l1_given_l2, l2_given_l1
+
+def phrase_probabilities(phrase_freqs):
+    freq_sum = sum(phrase_freqs.values())
+    phrase_probs = {}
+    for phrase, freq in phrase_freqs.iteritems():
+        phrase_probs[phrase] = freq / freq_sum
+
+    return phrase_probs
+
+def joint_probabilities(l1_given_l2, l2_phrase_probs):
+    joint_probs = {}
+    for phrase, prob in l1_given_l2.iteritems():
+        joint_probs[phrase] = prob * l2_phrase_probs[phrase[1]]
+
+    return joint_probs
+
 def extract_phrase_pair_freqs(alignments, language1, language2):
-    freqs = Counter()
+    phrase_pair_freqs = Counter()
+    l1_phrase_freqs = Counter()
+    l2_phrase_freqs = Counter()
     alignments = open(alignments, 'r')
     language1 = open(language1, 'r')
     language2 = open(language2, 'r')
     for str_align, l1, l2 in alignments, language1, language2:
         phrase_alignments = extract_alignments(str_to_alignments(str_align))
         for phrase_pair in extract_phrase_pairs_gen(phrase_alignments, l1, l2):
-            freqs[phrase_pair] += 1
+            phrase_pair_freqs[phrase_pair] += 1
+            l1_phrase_freqs[phrase_pair[0]] += 1
+            l2_phrase_freqs[phrase_pair[1]] += 1
 
-    return freqs
+    alignments.close()
+    language1.close()
+    language2.close()
+    return phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs
     
 def extract_phrase_pairs_gen(phrase_alignments, l1, l2):
     l1_words = l1.strip().split()
@@ -87,6 +119,18 @@ def extract_alignments(word_alignments):
         phrase_queue.append(new_p3)
 
     return phrase_alignment_list
+
+def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
+                         l1_given_l2, l2_given_l1):
+    out = open(file_name, 'w')
+    for pair in phrase_pairs:
+        joint = joint_probs[pair]
+        l1_l2 = l1_given_l2[pair]
+        l2_l1 = l2_given_l1[pair]
+        out.write('%s %f %f %f\n' % (pair,joint, l1_l2, l2_l1))
+
+    out.close()
+
 
 if __name__=='__main__':
     arg_parser = argparse.ArgumentParser()
