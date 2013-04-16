@@ -1,5 +1,6 @@
-# data
+# folders
 aligned-data/
+tmp/
 
 *.py[cod]
 
