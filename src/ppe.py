@@ -82,41 +82,41 @@ def phrase_range(phrase_alignments):
     return min1, min2, max1, max2
 
 def extract_alignments(word_alignments):
-    phrase_alignment_list = []
+    phrase_alignment_list = set([])
     # First form words into phrase pairs
-    while len(word_alignments):
-        phrase_alignment = set()
+    while len(word_alignments):        
         phrase_alignment_init = word_alignments.pop()
+        phrase_alignment = set([phrase_alignment_init])
         phrase_alignment_exp = [[phrase_alignment_init[0]], [phrase_alignment_init[1]]]
         while phrase_alignment_exp[0] or phrase_alignment_exp[1]:
             added_points = set([(x,y) for (x,y) in word_alignments if (x in phrase_alignment_exp[0] or y in phrase_alignment_exp[1])])
             phrase_alignment |= added_points
             word_alignments -= added_points
             phrase_alignment_exp = phrase_alignment_expansions(phrase_alignment)
-        phrase_alignment_list.append(phrase_range(phrase_alignment))
+        phrase_alignment_list.add(phrase_range(phrase_alignment))
     #Then loop over phrase pairs to join them together into new ones
     phrase_queue = list(phrase_alignment_list)
     while len(phrase_queue):
         p1 = phrase_queue.pop()
-        new_p3 = []
+        new_p3 = set()
         for p2 in phrase_queue:
             p3 = None
             if p1[0] is p2[2]+1 and p1[1] is p2[3]+1:
                 #p2 above, to the left of p1
                 p3 = p2[0], p2[1], p1[2], p1[3]
-            elif p1[2] is p2[0]-1 and p1[1] is p2[3]-1:
+            elif p1[2] is p2[0]-1 and p1[1] is p2[3]+1:
                 #p2 above, to the right of p1
                 p3 = p1[0], p2[1], p2[2], p1[3]
             elif p1[0] is p2[2]+1 and p1[3] is p2[1]-1:
                 #p2 below, to the left of p1
                 p3 = p2[0], p1[1], p1[2], p2[3]
             elif p1[2] is p2[0]-1 and p1[3] is p2[1]-1:
-                #p2 below, to the left of p1
+                #p2 below, to the right of p1
                 p3 = p1[0], p1[1], p2[2], p2[3]
             if p3:
-                new_p3.append(p3)
-        phrase_alignment_list.append(new_p3)
-        phrase_queue.append(new_p3)
+                new_p3.add(p3)
+        phrase_alignment_list |= new_p3
+        phrase_queue.extend(new_p3)
 
     return phrase_alignment_list
 
@@ -133,26 +133,7 @@ def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
 
 
 if __name__=='__main__':
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("-a", "--alignments",
-        help="File containing alignments")
-    '''
-    arg_parser.add_argument("-l1", "--language1",
-        help="File containing sentences of language 1")
-    arg_parser.add_argument("-l2", "--language2",
-        help="File containing sentences of language 2")
-    '''
     
-    args = arg_parser.parse_args()
-    alignments = args.alignments
-    '''
-    language1 = args.language1
-    language2 = args.language2
-    print alignments, language1, language2
-    '''
-    af = open(alignments, 'r')
-    for a in af:
-        al = str_to_alignments(a)
-        print al
-        phrase_pairs = extract_alignments(al)
-        print phrase_pairs
+    a = '0-0 1-1 2-2 2-3 1-4 3-5 3-6 4-7'
+    phrase_pairs = extract_alignments(str_to_alignments(a))
+    print phrase_pairs
