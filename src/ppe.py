@@ -132,8 +132,22 @@ def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
     out.close()
 
 
-if __name__=='__main__':
+def main():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("-a", "--alignments",
+        help="File containing alignments")
+    arg_parser.add_argument("-l1", "--language1",
+        help="File containing sentences of language 1")
+    arg_parser.add_argument("-l2", "--language2",
+        help="File containing sentences of language 2")
     
-    a = '0-0 1-1 2-2 2-3 1-4 3-5 3-6 4-7'
-    phrase_pairs = extract_alignments(str_to_alignments(a))
-    print phrase_pairs
+    args = arg_parser.parse_args()
+    alignments = args.alignments
+    language1 = args.language1
+    language2 = args.language2
+    print alignments, language1, language2
+    
+    extract_phrase_pair_freqs(alignments, language1, language2)
+    
+if __name__=='__main__':
+    main()
