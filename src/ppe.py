@@ -2,6 +2,7 @@
 
 import argparse
 from collections import Counter
+import sys
 
 def conditional_probabilities(phrase_pair_freqs, 
                               l1_phrase_freqs, l2_phrase_freqs):
@@ -35,11 +36,15 @@ def extract_phrase_pair_freqs(alignments, language1, language2, max_length = flo
     alignments = open(alignments, 'r')
     language1 = open(language1, 'r')
     language2 = open(language2, 'r')
+    
     for i, str_align in enumerate(alignments):
-        print i
+        if i%1000==0:
+            sys.stdout.write('\r%d' % i)
+            sys.stdout.flush()
+
         l1 = language1.next()
         l2 = language2.next()
-        print str_align, l1, l2
+        #print str_align, l1, l2
         phrase_alignments = extract_alignments(str_to_alignments(str_align), max_length)
         for phrase_pair in extract_phrase_pairs_gen(phrase_alignments, l1, l2):
             phrase_pair_freqs[phrase_pair] += 1
@@ -49,6 +54,7 @@ def extract_phrase_pair_freqs(alignments, language1, language2, max_length = flo
     alignments.close()
     language1.close()
     language2.close()
+    sys.stdout.write('\n')
     return phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs
     
 def extract_phrase_pairs_gen(phrase_alignments, l1, l2):
@@ -169,6 +175,11 @@ def main():
     language2 = args.language2
     output_name = args.output
     
+    print 'alignments: %s' % alignments
+    print 'language1: %s' % language1
+    print 'language2: %s' % language2
+    print 'output name: %s' % output_name
+    
     freqs = extract_phrase_pair_freqs(alignments, language1, language2, 4)
     phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs = freqs
     l1_given_l2, l2_given_l1 = conditional_probabilities(phrase_pair_freqs, 
@@ -181,8 +192,8 @@ def main():
 
     
 if __name__ == '__main__':
-    #main()
-    str_align = '9-0 9-1 10-2 11-3 12-4 12-5 8-6 14-7 15-7 16-8 17-9 18-10 19-11 20-12 21-12 12-13 13-13 22-14 23-15 24-16 4-17 26-18 26-19 27-19 27-20 27-21 28-21 29-22 30-23 31-24 32-25 33-26 34-27 35-29 36-30 37-31 37-32 39-33 38-34 38-35 39-35 40-36 42-37 43-38'
-    print extract_alignments(str_to_alignments(str_align))
+    main()
+    #str_align = '9-0 9-1 10-2 11-3 12-4 12-5 8-6 14-7 15-7 16-8 17-9 18-10 19-11 20-12 21-12 12-13 13-13 22-14 23-15 24-16 4-17 26-18 26-19 27-19 27-20 27-21 28-21 29-22 30-23 31-24 32-25 33-26 34-27 35-29 36-30 37-31 37-32 39-33 38-34 38-35 39-35 40-36 42-37 43-38'
+    #print extract_alignments(str_to_alignments(str_align))
 
     
