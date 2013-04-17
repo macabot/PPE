@@ -97,7 +97,12 @@ def extract_alignments(word_alignments, max_length = float('inf')):
         phrase_alignment = set([phrase_alignment_init])
         phrase_alignment_exp = [[phrase_alignment_init[0]], [phrase_alignment_init[1]]]
         while phrase_alignment_exp[0] or phrase_alignment_exp[1]:
-            added_points = set([(x,y) for (x,y) in word_alignments if (x in phrase_alignment_exp[0] or y in phrase_alignment_exp[1])])
+            added_points = set([(x,y) for (x,y) in word_alignments 
+                            if (x in phrase_alignment_exp[0] or y in phrase_alignment_exp[1])])
+            # stop if no alignment can fill the gaps
+            if not added_points:
+                break
+
             phrase_alignment |= added_points
             word_alignments -= added_points
             phrase_alignment_exp = phrase_alignment_expansions(phrase_alignment, max_length)
@@ -176,8 +181,8 @@ def main():
 
     
 if __name__ == '__main__':
-    main()
-    #str_align = '0-0 1-1 2-2 2-3 1-4 3-5 3-6 4-7'
-    #print extract_alignments(str_to_alignments(str_align), 4)
+    #main()
+    str_align = '9-0 9-1 10-2 11-3 12-4 12-5 8-6 14-7 15-7 16-8 17-9 18-10 19-11 20-12 21-12 12-13 13-13 22-14 23-15 24-16 4-17 26-18 26-19 27-19 27-20 27-21 28-21 29-22 30-23 31-24 32-25 33-26 34-27 35-29 36-30 37-31 37-32 39-33 38-34 38-35 39-35 40-36 42-37 43-38'
+    print extract_alignments(str_to_alignments(str_align))
 
     
