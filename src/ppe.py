@@ -29,7 +29,8 @@ def joint_probabilities(l1_given_l2, l2_phrase_probs):
 
     return joint_probs
 
-def extract_phrase_pair_freqs(alignments, language1, language2, max_length = float('inf')):
+def extract_phrase_pair_freqs(alignments, language1, language2, 
+                                max_length = float('inf')):
     phrase_pair_freqs = Counter()
     l1_phrase_freqs = Counter()
     l2_phrase_freqs = Counter()
@@ -38,14 +39,15 @@ def extract_phrase_pair_freqs(alignments, language1, language2, max_length = flo
     language2 = open(language2, 'r')
     
     for i, str_align in enumerate(alignments):
-        if i%1000==0:
+        if i % 1000 is 0:
             sys.stdout.write('\r%d' % i)
             sys.stdout.flush()
 
         l1 = language1.next()
         l2 = language2.next()
         #print str_align, l1, l2
-        phrase_alignments = extract_alignments(str_to_alignments(str_align), max_length)
+        align = str_to_alignments(str_align)
+        phrase_alignments = extract_alignments(align, max_length)
         for phrase_pair in extract_phrase_pairs_gen(phrase_alignments, l1, l2):
             phrase_pair_freqs[phrase_pair] += 1
             l1_phrase_freqs[phrase_pair[0]] += 1
@@ -101,10 +103,12 @@ def extract_alignments(word_alignments, max_length = float('inf')):
     while len(word_alignments):        
         phrase_alignment_init = word_alignments.pop()
         phrase_alignment = set([phrase_alignment_init])
-        phrase_alignment_exp = [[phrase_alignment_init[0]], [phrase_alignment_init[1]]]
+        phrase_alignment_exp = [[phrase_alignment_init[0]], 
+                                [phrase_alignment_init[1]]]
         while phrase_alignment_exp[0] or phrase_alignment_exp[1]:
-            added_points = set([(x,y) for (x,y) in word_alignments 
-                            if (x in phrase_alignment_exp[0] or y in phrase_alignment_exp[1])])
+            added_points = set([(x, y) for (x, y) in word_alignments 
+                            if (x in phrase_alignment_exp[0] 
+                            or y in phrase_alignment_exp[1])])
             # stop if no alignment can fill the gaps
             if not added_points:
                 break
@@ -113,9 +117,10 @@ def extract_alignments(word_alignments, max_length = float('inf')):
             word_alignments -= added_points
             phrase_alignment_exp = phrase_alignment_expansions(phrase_alignment, max_length)
 
-        range = phrase_range(phrase_alignment)
-        if range[2]-range[0]+1 <= max_length and range[3]-range[1]+1 <= max_length:
-            phrase_alignment_list.add(range)
+        align_range = phrase_range(phrase_alignment)
+        if align_range[2]-align_range[0]+1 <= max_length and \
+                align_range[3]-align_range[1]+1 <= max_length:
+            phrase_alignment_list.add(align_range)
 
     #Then loop over phrase pairs to join them together into new ones
     phrase_queue = set(phrase_alignment_list)
@@ -188,12 +193,11 @@ def main():
     joint_probs = joint_probabilities(l1_given_l2, l2_phrase_probs)
     phrase_pairs_to_file(output_name, phrase_pair_freqs, joint_probs,
                          l1_given_l2, l2_given_l1)
-    out = open(output_name, 'w')
 
     
 if __name__ == '__main__':
     main()
-    #str_align = '9-0 9-1 10-2 11-3 12-4 12-5 8-6 14-7 15-7 16-8 17-9 18-10 19-11 20-12 21-12 12-13 13-13 22-14 23-15 24-16 4-17 26-18 26-19 27-19 27-20 27-21 28-21 29-22 30-23 31-24 32-25 33-26 34-27 35-29 36-30 37-31 37-32 39-33 38-34 38-35 39-35 40-36 42-37 43-38'
+    #str_align = '0-0 1-1 2-2 2-3 1-4 3-5 3-6 4-7'
     #print extract_alignments(str_to_alignments(str_align))
 
     
