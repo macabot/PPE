@@ -29,9 +29,12 @@ def joint_probabilities(l1_given_l2, l2_phrase_probs):
 
     return joint_probs
 
-def add_phrase_alignment(collection, phrase, max_length):
-    if phrase and phrase[2]-phrase[0]+1 <= max_length \
-              and phrase[3]-phrase[1]+1 <= max_length:
+def add_phrase_alignment(collection, phrase, max_length,
+                         l1_length, l2_length):
+    if phrase and phrase[2] - phrase[0]+1 <= max_length \
+              and phrase[3] - phrase[1]+1 <= max_length \
+              and phrase[0] >= 0 and phrase[1] >= 0     \
+              and phrase[2] < l1_length and phrase[3] < l2_length:
         if isinstance(collection, list):
             collection.append(phrase)
         elif isinstance(collection, set):
@@ -39,25 +42,28 @@ def add_phrase_alignment(collection, phrase, max_length):
         else:
             return NotImplemented
 
-def extract_phrase_pair_freqs(alignments, language1, language2, 
-                                max_length = float('inf')):
+def extract_phrase_pair_freqs(alignments_file, language1_file,
+                              language2_file, 
+                              max_length = float('inf')):
     phrase_pair_freqs = Counter()
     l1_phrase_freqs = Counter()
     l2_phrase_freqs = Counter()
-    alignments = open(alignments, 'r')
-    language1 = open(language1, 'r')
-    language2 = open(language2, 'r')
+    num_lines = number_of_lines(alignments_file)
+    alignments = open(alignments_file, 'r')
+    language1 = open(language1_file, 'r')
+    language2 = open(language2_file, 'r')
     
     for i, str_align in enumerate(alignments):
-        if i % 1000 is 0:
-            sys.stdout.write('\r%d' % i)
+        if i % (num_lines/100) is 0:
+            sys.stdout.write('\r%d%%' % (i*100/num_lines,))
             sys.stdout.flush()
 
         l1 = language1.next()
         l2 = language2.next()
         #print str_align, l1, l2
         align = str_to_alignments(str_align)
-        phrase_alignments = extract_alignments(align, max_length)
+        phrase_alignments = extract_alignments(align, len(l1), len(l2),
+                                               max_length)
         
         for phrase_pair in extract_phrase_pairs_gen(phrase_alignments, l1, l2):
             phrase_pair_freqs[phrase_pair] += 1
@@ -116,7 +122,8 @@ def phrase_range(phrase_alignments):
 
     return min1, min2, max1, max2
 
-def extract_alignments(word_alignments, max_length = float('inf')):
+def extract_alignments(word_alignments, l1_length, l2_length,
+                       max_length = float('inf')):
     phrase_queue = set()
     #copy to use later for singletons
     word_alignments_orig = set(word_alignments)
@@ -139,7 +146,8 @@ def extract_alignments(word_alignments, max_length = float('inf')):
             phrase_alignment_exp = phrase_alignment_expansions(phrase_alignment, max_length)
 
         align_range = phrase_range(phrase_alignment)
-        add_phrase_alignment(phrase_queue, align_range, max_length)
+        add_phrase_alignment(phrase_queue, align_range, max_length,
+                             l1_length, l2_length)
 
     #Then loop over phrase pairs to join them together into new ones
     phrase_alignment_list = set()
@@ -150,24 +158,29 @@ def extract_alignments(word_alignments, max_length = float('inf')):
         #add singletons
         singleton = set([(x, y) for (x, y) in word_alignments_orig 
             if x is p1[0]-1])
-        if not len(singleton):
+        if not singleton:
             p3 = p1[0]-1, p1[1], p1[2], p1[3]
-            add_phrase_alignment(new_p3, p3, max_length)
+            add_phrase_alignment(new_p3, p3, max_length, 
+                                 l1_length, l2_length)
         singleton = set([(x, y) for (x, y) in word_alignments_orig 
             if x is p1[2]+1])
-        if not len(singleton):
+        if not singleton:
             p3 = p1[0], p1[1], p1[2]+1, p1[3]
-            add_phrase_alignment(new_p3, p3, max_length)
+            add_phrase_alignment(new_p3, p3, max_length, 
+                                 l1_length, l2_length)
         singleton = set([(x, y) for (x, y) in word_alignments_orig 
             if y is p1[1]-1])
-        if not len(singleton):
+        if not singleton:
             p3 = p1[0], p1[1]-1, p1[2], p1[3]
-            add_phrase_alignment(new_p3, p3, max_length)
+            add_phrase_alignment(new_p3, p3, max_length,
+                                 l1_length, l2_length)
         singleton = set([(x, y) for (x, y) in word_alignments_orig 
             if y is p1[3]+1])
-        if not len(singleton):
+        if not singleton:
             p3 = p1[0], p1[1], p1[2], p1[3]+1
-            add_phrase_alignment(new_p3, p3, max_length)
+            add_phrase_alignment(new_p3, p3, max_length,
+                                 l1_length, l2_length)
+
         for p2 in phrase_queue:
             p3 = None
             if p1[0] is p2[2]+1 and p1[1] is p2[3]+1:
@@ -183,7 +196,8 @@ def extract_alignments(word_alignments, max_length = float('inf')):
                 #p2 below, to the right of p1
                 p3 = p1[0], p1[1], p2[2], p2[3]
             # if p3 exists and is smaller or equal to the max length
-            add_phrase_alignment(new_p3, p3, max_length)
+            add_phrase_alignment(new_p3, p3, max_length,
+                                 l1_length, l2_length)
 
         phrase_alignment_list.add(p1)
         phrase_queue |= new_p3
@@ -201,6 +215,13 @@ def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
 
     out.close()
 
+def number_of_lines(file_name):
+    amount = 0
+    file = open(file_name, 'r')
+    for _ in file:
+        amount += 1
+
+    return amount
 
 def main():
     arg_parser = argparse.ArgumentParser()
@@ -236,7 +257,10 @@ def main():
     
 if __name__ == '__main__':
     main()
-    #str_align = '0-0 1-1 2-2 2-3 1-4 3-5 3-6 4-7'
-    #print extract_alignments(str_to_alignments(str_align))
+    #str_align = '0-0 1-1 2-2 2-3 1-4 3-6 4-7'
+    #l1_length = 5
+    #l2_length = 8
+    #print extract_alignments(str_to_alignments(str_align), 
+    #                         l1_length, l2_length, 4)
 
     
