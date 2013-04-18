@@ -9,8 +9,8 @@ def conditional_probabilities(phrase_pair_freqs,
     l1_given_l2 = {}
     l2_given_l1 = {}
     for phrase_pair, freq in phrase_pair_freqs.iteritems():
-        l1_given_l2[phrase_pair] = freq / l1_phrase_freqs[phrase_pair[0]]
-        l2_given_l1[phrase_pair] = freq / l2_phrase_freqs[phrase_pair[1]]
+        l1_given_l2[phrase_pair] = float(freq) / l1_phrase_freqs[phrase_pair[0]]
+        l2_given_l1[phrase_pair] = float(freq) / l2_phrase_freqs[phrase_pair[1]]
 
     return l1_given_l2, l2_given_l1
 
@@ -18,7 +18,7 @@ def phrase_probabilities(phrase_freqs):
     freq_sum = sum(phrase_freqs.values())
     phrase_probs = {}
     for phrase, freq in phrase_freqs.iteritems():
-        phrase_probs[phrase] = freq / freq_sum
+        phrase_probs[phrase] = float(freq) / freq_sum
 
     return phrase_probs
 
@@ -48,6 +48,7 @@ def extract_phrase_pair_freqs(alignments, language1, language2,
         #print str_align, l1, l2
         align = str_to_alignments(str_align)
         phrase_alignments = extract_alignments(align, max_length)
+        
         for phrase_pair in extract_phrase_pairs_gen(phrase_alignments, l1, l2):
             phrase_pair_freqs[phrase_pair] += 1
             l1_phrase_freqs[phrase_pair[0]] += 1
@@ -58,7 +59,7 @@ def extract_phrase_pair_freqs(alignments, language1, language2,
     language2.close()
     sys.stdout.write('\n')
     return phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs
-    
+
 def extract_phrase_pairs_gen(phrase_alignments, l1, l2):
     l1_words = l1.strip().split()
     l2_words = l2.strip().split()
@@ -68,7 +69,7 @@ def extract_phrase_pairs_gen(phrase_alignments, l1, l2):
     
 def str_to_alignments(string):
     string_list = string.strip().split()
-    alignments = set([])
+    alignments = set()
     for a_str in string_list:
         a1_str, a2_str = a_str.split('-')
         alignments.add((int(a1_str), int(a2_str)))
@@ -91,14 +92,22 @@ def phrase_alignment_expansions(phrase_alignments, max_length = float('inf')):
     return range1, range2
     
 def phrase_range(phrase_alignments):
-    min1 = min(a1 for (a1, a2) in phrase_alignments)
-    min2 = min(a2 for (a1, a2) in phrase_alignments)
-    max1 = max(a1 for (a1, a2) in phrase_alignments)
-    max2 = max(a2 for (a1, a2) in phrase_alignments)
+    min1 = min2 = float('inf')
+    max1 = max2 = float('-inf')
+    for (a1, a2) in phrase_alignments:
+        if a1 < min1:
+            min1 = a1
+        if a1 > max1:
+            max1 = a1
+        if a2 < min2:
+            min2 = a2
+        if a2 > max2:
+            max2 = a2
+
     return min1, min2, max1, max2
 
 def extract_alignments(word_alignments, max_length = float('inf')):
-    phrase_alignment_list = set([])
+    phrase_queue = set()
     # First form words into phrase pairs
     while len(word_alignments):        
         phrase_alignment_init = word_alignments.pop()
@@ -120,10 +129,9 @@ def extract_alignments(word_alignments, max_length = float('inf')):
         align_range = phrase_range(phrase_alignment)
         if align_range[2]-align_range[0]+1 <= max_length and \
                 align_range[3]-align_range[1]+1 <= max_length:
-            phrase_alignment_list.add(align_range)
+            phrase_queue.add(align_range)
 
     #Then loop over phrase pairs to join them together into new ones
-    phrase_queue = set(phrase_alignment_list)
     phrase_alignment_list = set()
     while len(phrase_queue):
         p1 = phrase_queue.pop()
@@ -158,7 +166,7 @@ def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
         joint = joint_probs[pair]
         l1_l2 = l1_given_l2[pair]
         l2_l1 = l2_given_l1[pair]
-        out.write('%s %f %f %f\n' % (pair, joint, l1_l2, l2_l1))
+        out.write('%s %s %s %s\n' % (pair, joint, l1_l2, l2_l1))
 
     out.close()
 
