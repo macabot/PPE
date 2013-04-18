@@ -12,7 +12,7 @@ def compare(train_files, held_out_files):
 def compare_phrase(test_phrase, phrase_table, max_concat, concat_num):
     if concat_num > max_concat:
         return False
-    phrase_splits = split_phrase(test_phrase, concat_num)
+    phrase_splits = all_splits(concat_num, test_phrase)
     for ps in phrase_splits:
         match = True
         for split in ps:
@@ -22,3 +22,23 @@ def compare_phrase(test_phrase, phrase_table, max_concat, concat_num):
         if match:
             return True
     return compare_phrase(test_phrase, phrase_table, max_concat, concat_num+1)
+    
+def all_splits(splits, str):
+    if splits == 0:
+        return [[str]]
+
+    split_words = []
+    words = str.split()
+    for i in xrange(1, len(words)):
+        front = ' '.join(words[:i])
+        back = ' '.join(words[i:])        
+        tail = all_splits(splits-1, back)
+        for t in tail:
+            temp_split = [front]
+            temp_split.extend(t)
+            split_words.append(temp_split)
+
+    return split_words
+
+if __name__ == '__main__':
+    print all_splits(2, 'a b c d e')
