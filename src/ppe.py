@@ -108,6 +108,8 @@ def phrase_range(phrase_alignments):
 
 def extract_alignments(word_alignments, max_length = float('inf')):
     phrase_queue = set()
+    #copy to use later for singletons
+    word_alignments_orig = set(word_alignments)
     # First form words into phrase pairs
     while len(word_alignments):        
         phrase_alignment_init = word_alignments.pop()
@@ -136,6 +138,28 @@ def extract_alignments(word_alignments, max_length = float('inf')):
     while len(phrase_queue):
         p1 = phrase_queue.pop()
         new_p3 = set()
+        singletons = True
+        #add singletons
+        singleton = set([(x, y) for (x, y) in word_alignments_orig 
+            if x is p1[0]-1])
+        if not len(singleton):
+            p3 = p1[0]-1, p1[1], p1[2], p1[3]
+            add_phrase_alignment(new_p3, p3, max_length)
+        singleton = set([(x, y) for (x, y) in word_alignments_orig 
+            if x is p1[2]+1])
+        if not len(singleton):
+            p3 = p1[0], p1[1], p1[2]+1, p1[3]
+            add_phrase_alignment(new_p3, p3, max_length)
+        singleton = set([(x, y) for (x, y) in word_alignments_orig 
+            if y is p1[1]-1])
+        if not len(singleton):
+            p3 = p1[0], p1[1]-1, p1[2], p1[3]
+            add_phrase_alignment(new_p3, p3, max_length)
+        singleton = set([(x, y) for (x, y) in word_alignments_orig 
+            if y is p1[3]+1])
+        if not len(singleton):
+            p3 = p1[0], p1[1], p1[2], p1[3]+1
+            add_phrase_alignment(new_p3, p3, max_length)
         for p2 in phrase_queue:
             p3 = None
             if p1[0] is p2[2]+1 and p1[1] is p2[3]+1:
@@ -151,8 +175,7 @@ def extract_alignments(word_alignments, max_length = float('inf')):
                 #p2 below, to the right of p1
                 p3 = p1[0], p1[1], p2[2], p2[3]
             # if p3 exists and is smaller or equal to the max length
-            if p3 and p3[2]-p3[0]+1 <= max_length and p3[3]-p3[1]+1 <= max_length:
-                new_p3.add(p3)
+            add_phrase_alignment(new_p3, p3, max_length)
 
         phrase_alignment_list.add(p1)
         phrase_queue |= new_p3
