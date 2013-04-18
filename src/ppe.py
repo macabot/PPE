@@ -29,6 +29,16 @@ def joint_probabilities(l1_given_l2, l2_phrase_probs):
 
     return joint_probs
 
+def add_phrase_alignment(collection, phrase, max_length):
+    if phrase and phrase[2]-phrase[0]+1 <= max_length \
+              and phrase[3]-phrase[1]+1 <= max_length:
+        if isinstance(collection, list):
+            collection.append(phrase)
+        elif isinstance(collection, set):
+            collection.add(phrase)
+        else:
+            return NotImplemented
+
 def extract_phrase_pair_freqs(alignments, language1, language2, 
                                 max_length = float('inf')):
     phrase_pair_freqs = Counter()
@@ -129,9 +139,7 @@ def extract_alignments(word_alignments, max_length = float('inf')):
             phrase_alignment_exp = phrase_alignment_expansions(phrase_alignment, max_length)
 
         align_range = phrase_range(phrase_alignment)
-        if align_range[2]-align_range[0]+1 <= max_length and \
-                align_range[3]-align_range[1]+1 <= max_length:
-            phrase_queue.add(align_range)
+        add_phrase_alignment(phrase_queue, align_range, max_length)
 
     #Then loop over phrase pairs to join them together into new ones
     phrase_alignment_list = set()
