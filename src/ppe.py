@@ -233,19 +233,23 @@ def main():
         help="File containing sentences of language 2")
     arg_parser.add_argument("-o", "--output",
         help="File name of output")
+    arg_parser.add_argument("-m", "--max_length",
+        help="Maximum length of phrase pairs")
     
     args = arg_parser.parse_args()
     alignments = args.alignments
     language1 = args.language1
     language2 = args.language2
     output_name = args.output
+    max_length = args.max_length
     
     print 'alignments: %s' % alignments
     print 'language1: %s' % language1
     print 'language2: %s' % language2
     print 'output name: %s' % output_name
+    print 'max length: %s'  % max_length
     
-    freqs = extract_phrase_pair_freqs(alignments, language1, language2, 4)
+    freqs = extract_phrase_pair_freqs(alignments, language1, language2, max_length)
     phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs = freqs
     l1_given_l2, l2_given_l1 = conditional_probabilities(phrase_pair_freqs, 
                               l1_phrase_freqs, l2_phrase_freqs)
