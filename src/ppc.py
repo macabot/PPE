@@ -1,17 +1,25 @@
 # phrase pair coverage
 
 import ast
+import argparse
 
 def compare(train_file, held_out_file, max_concat):
     train_table = read_phrase_table(train_file)
     held_out_table = read_phrase_table(held_out_file)
     correct = 0
     incorrect = 0
-    for phrase_pair in held_out_table:
+    num_lines = len(held_out_table)
+    for i, phrase_pair in enumerate(held_out_table):
+        if i % (num_lines/100) is 0:
+            sys.stdout.write('\r%d%%' % (i*100/num_lines,))
+            sys.stdout.flush()
+
         if compare_phrase(phrase_pair, train_table, max_concat):
             correct += 1
         else:
             incorrect += 1
+
+    sys.stdout.write('\n')
     return correct/float(correct+incorrect)
 
 def compare_phrase(test_phrase, phrase_table, max_concat, concat_num=0):
@@ -46,6 +54,7 @@ def all_splits(splits, str):
     return split_words
 
 def read_phrase_table(file_name):
+    print file_name
     file = open(file_name, 'r')
     phrase_table = []
     for line in file:
@@ -58,13 +67,13 @@ def read_phrase_table(file_name):
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("-trf", "--trainfile",
+    arg_parser.add_argument("-t", "--trainfile",
         help="File containing phrases from the training set")
-    arg_parser.add_argument("-tstf", "--testfile",
+    arg_parser.add_argument("-v", "--heldoutfile",
         help="File containing phrases from the test set")
-    arg_parser.add_argument("-mc", "--max_concat",
+    arg_parser.add_argument("-m", "--max_concat",
         help="File containing phrases from the test set")
     args = arg_parser.parse_args()
-    print compare(args.trainfile, args.testfile, args.max_concat)
+    print compare(args.trainfile, args.heldoutfile, int(args.max_concat))
     #phrae_table = read_phrase_table('../phrase-pairs/output.heldout.txt')
     #print phrase_table
