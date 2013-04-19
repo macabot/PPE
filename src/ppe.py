@@ -241,7 +241,7 @@ def main():
     language1 = args.language1
     language2 = args.language2
     output_name = args.output
-    max_length = args.max_length
+    max_length = int(args.max_length)
     
     print 'alignments: %s' % alignments
     print 'language1: %s' % language1
