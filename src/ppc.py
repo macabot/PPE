@@ -4,6 +4,7 @@ import ast
 import argparse
 import ppe
 import sys
+import itertools
 
 def compare(train_file, held_out_file, max_concat):
     train_table = read_phrase_table(train_file)
@@ -16,7 +17,7 @@ def compare(train_file, held_out_file, max_concat):
             sys.stdout.write('\r%d%%' % (i*100/num_lines,))
             sys.stdout.flush()
 
-        if compare_phrase(phrase_pair, train_table, max_concat):
+        if construct_phrase_pair(phrase_pair, train_table, max_concat):
             correct += 1
         else:
             incorrect += 1
@@ -24,19 +25,25 @@ def compare(train_file, held_out_file, max_concat):
     sys.stdout.write('\n')
     return correct/float(correct+incorrect)
 
-def compare_phrase(test_phrase, phrase_table, max_concat, concat_num=0):
+def construct_phrase_pair(phrase, phrase_table, max_concat, concat_num = 0):
     if concat_num > max_concat:
         return False
-    phrase_splits = all_splits(concat_num, test_phrase)
-    for ps in phrase_splits:
-        match = True
-        for split in ps:
-            if split not in phrase_table:
-                match = False
-                break
-        if match:
-            return True
-    return compare_phrase(test_phrase, phrase_table, max_concat, concat_num+1)
+
+    l1_phrase_splits = all_splits(concat_num, phrase[0])
+    l2_phrase_splits = all_splits(concat_num, phrase[1])
+    for l1_phrase, l2_phrase in itertools.product(l1_phrase_splits, l2_phrase_splits):
+        for permutation in itertools.permutations(l2_phrase):
+            match = True
+            for i in xrange(concat_num+1):
+                sub_phrase = (l1_phrase[i], permutation[i])
+                if sub_phrase not in phrase_table:
+                    match = False
+                    break
+        
+            if match:
+                return True
+
+    return construct_phrase_pair(phrase, phrase_table, max_concat, concat_num+1)
     
 def all_splits(splits, str):
     if splits == 0:
@@ -93,5 +100,4 @@ if __name__ == '__main__':
         help="File containing phrases from the test set")
     args = arg_parser.parse_args()
     print compare(args.trainfile, args.heldoutfile, int(args.max_concat))
-    #phrae_table = read_phrase_table('../phrase-pairs/output.heldout.txt')
-    #print phrase_table
+    
