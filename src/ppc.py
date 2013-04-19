@@ -2,13 +2,15 @@
 
 import ast
 import argparse
+import ppe
+import sys
 
 def compare(train_file, held_out_file, max_concat):
     train_table = read_phrase_table(train_file)
-    held_out_table = read_phrase_table(held_out_file)
+    held_out_table = read_phrase_table_gen(held_out_file)
     correct = 0
     incorrect = 0
-    num_lines = len(held_out_table)
+    num_lines = ppe.number_of_lines(held_out_file)
     for i, phrase_pair in enumerate(held_out_table):
         if i % (num_lines/100) is 0:
             sys.stdout.write('\r%d%%' % (i*100/num_lines,))
@@ -53,14 +55,30 @@ def all_splits(splits, str):
 
     return split_words
 
-def read_phrase_table(file_name):
-    print file_name
+def read_phrase_table_gen(file_name):
     file = open(file_name, 'r')
-    phrase_table = []
     for line in file:
         phrase_pair, _, _, _ = ast.literal_eval(line.strip())
-        phrase_table.append(phrase_pair)
+        yield phrase_pair
 
+    file.close()
+
+def read_phrase_table(file_name):
+    print 'Reading %s ' % file_name
+    file = open(file_name, 'r')
+    phrase_table = set()
+    num_lines = ppe.number_of_lines(file_name)
+    i = 0
+    for line in file:
+        if i % (num_lines/100) is 0:
+            sys.stdout.write('\r%d%%' % (i*100/num_lines,))
+            sys.stdout.flush()
+
+        phrase_pair, _, _, _ = ast.literal_eval(line.strip())
+        phrase_table.add(phrase_pair)
+        i += 1
+
+    sys.stdout.write('\n')
     file.close()
     return phrase_table
     
