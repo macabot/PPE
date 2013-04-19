@@ -1,16 +1,20 @@
 # phrase pair coverage
 
-import ppe
 import ast
 
-def compare(train_files, held_out_files):
-    train_freqs = ppe.extract_phrase_pair_freqs(train_files[0],
-                    train_files[1], train_files[2], train_files[3])
-    held_out_freqs = ppe.extract_phrase_pair_freqs(held_out_files[0],
-                    held_out_files[1], held_out_files[2], 
-                    held_out_files[3])
+def compare(train_file, held_out_file, max_concat):
+    train_table = read_phrase_table(train_file)
+    held_out_table = read_phrase_table(held_out_file)
+    correct = 0
+    incorrect = 0
+    for phrase_pair in held_out_table:
+        if compare_phrase(phrase_pair, train_table, max_concat):
+            correct += 1
+        else:
+            incorrect += 1
+    return correct/float(correct+incorrect)
 
-def compare_phrase(test_phrase, phrase_table, max_concat, concat_num):
+def compare_phrase(test_phrase, phrase_table, max_concat, concat_num=0):
     if concat_num > max_concat:
         return False
     phrase_splits = all_splits(concat_num, test_phrase)
@@ -53,6 +57,14 @@ def read_phrase_table(file_name):
     
 
 if __name__ == '__main__':
-    pass
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("-trf", "--trainfile",
+        help="File containing phrases from the training set")
+    arg_parser.add_argument("-tstf", "--testfile",
+        help="File containing phrases from the test set")
+    arg_parser.add_argument("-mc", "--max_concat",
+        help="File containing phrases from the test set")
+    args = arg_parser.parse_args()
+    print compare(args.trainfile, args.testfile, args.max_concat)
     #phrae_table = read_phrase_table('../phrase-pairs/output.heldout.txt')
     #print phrase_table
