@@ -211,7 +211,7 @@ def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
         joint = joint_probs[pair]
         l1_l2 = l1_given_l2[pair]
         l2_l1 = l2_given_l1[pair]
-        out.write('%s %s %s %s\n' % (pair, joint, l1_l2, l2_l1))
+        out.write('(%s, %s, %s, %s)\n' % (pair, joint, l1_l2, l2_l1))
 
     out.close()
 

@@ -1,6 +1,7 @@
 # phrase pair coverage
 
 import ppe
+import ast
 
 def compare(train_files, held_out_files):
     train_freqs = ppe.extract_phrase_pair_freqs(train_files[0],
@@ -40,5 +41,18 @@ def all_splits(splits, str):
 
     return split_words
 
+def read_phrase_table(file_name):
+    file = open(file_name, 'r')
+    phrase_table = []
+    for line in file:
+        phrase_pair, _, _, _ = ast.literal_eval(line.strip())
+        phrase_table.append(phrase_pair)
+
+    file.close()
+    return phrase_table
+    
+
 if __name__ == '__main__':
-    print all_splits(2, 'a b c d e')
+    pass
+    #phrae_table = read_phrase_table('../phrase-pairs/output.heldout.txt')
+    #print phrase_table

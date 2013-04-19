@@ -1,6 +1,7 @@
 # folders
 aligned-data/
 tmp/
+phrase-pairs/
 
 *.py[cod]
 
