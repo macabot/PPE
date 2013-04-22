@@ -88,7 +88,17 @@ def read_phrase_table(file_name):
     sys.stdout.write('\n')
     file.close()
     return phrase_table
-    
+
+def phrase_table_to_moses(file_name, out_name):
+    file = open(file_name, 'r')
+    out = open(out_name, 'w')
+    for line in file:
+        phrase_pair, _, _, l2_given_l1 = ast.literal_eval(line.strip())
+        l1, l2 = phrase_pair
+        out.write('%s ||| %s ||| %s ||| |||\n' % (l1, l2, l2_given_l1))
+
+    file.close()
+    out.close()
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
