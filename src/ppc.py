@@ -1,12 +1,33 @@
 # phrase pair coverage
 
+"""
+By Michael Cabot (6047262) and Sander Nugteren (6042023)
+"""
+
 import ast
 import argparse
 import ppe
 import sys
 import itertools
 
-def compare(train_table, held_out_file, max_concat):    
+def compare(train_table, held_out_file, max_concat):
+    """ Explore the coverage (sparsity) of the phrase table by computing 
+    the percentage phrase pairs in a held-out set which:
+    (a) are available in the training set phrase table, or
+    (b) can be built by concatenating (in any order) n > 0 phrase pairs from
+        the training set phrase table: it is important to set an upper-bound
+        on n, E.g., n <= 3 which makes this more reasonable to execute
+    
+    Keywords arguments:
+    train_table -- table of phrase pairs from training data
+    held_out_file -- file name of file containing phrase pairs with their 
+                     corresponding joint and conditional probabilities
+    max_concat -- maximum number of concatenations. If max_concat==0, then
+                  then whole phrase pair in the held out set must be present
+                  in the train table
+    
+    Returns coverage of phrase pairs in the held out set
+    """
     held_out_table = read_phrase_table_gen(held_out_file)
     correct = 0
     incorrect = 0
@@ -25,6 +46,18 @@ def compare(train_table, held_out_file, max_concat):
     return correct/float(correct+incorrect)
 
 def construct_phrase_pair(phrase, phrase_table, max_concat, concat_num = 0):
+    """Build phrase pairs by splitting the phrases for each language and check
+    if all the phrase pairs in one of the possible alignments between these splits 
+    are present in the phrase table
+    
+    Keywords arguments:
+    phrase -- a phrase pair
+    phrase table -- set of phrase pairs
+    max_concat -- maximum number of concatenations
+    concat_num -- current number of concatenation (default is 0)
+    
+    Returns True if all sub phrase pairs are in the phrase table
+    """
     if concat_num > max_concat:
         return False
 
@@ -45,6 +78,14 @@ def construct_phrase_pair(phrase, phrase_table, max_concat, concat_num = 0):
     return construct_phrase_pair(phrase, phrase_table, max_concat, concat_num+1)
     
 def all_splits(splits, str):
+    """Construct all possible splits of a phrase
+    
+    Keywords arguments:
+    splits -- number of splits >= 0
+    str -- contains words separated by spaces
+    
+    Returns a list of all possible splits where each element is a list of substrings
+    """
     if splits == 0:
         return [[str]]
 
@@ -62,6 +103,13 @@ def all_splits(splits, str):
     return split_words
 
 def read_phrase_table_gen(file_name):
+    """Read phrase pairs from a file
+    
+    Keywords arguments:
+    file_name -- name of file containing phrase table
+    
+    Yield phrase pair
+    """
     file = open(file_name, 'r')
     for line in file:
         phrase_pair, _, _, _ = ast.literal_eval(line.strip())
@@ -70,6 +118,13 @@ def read_phrase_table_gen(file_name):
     file.close()
 
 def read_phrase_table(file_name):
+    """Read phrase pairs from a file
+    
+    Keywords arguments:
+    file_name -- name of file containing phrase table
+    
+    Set of all phrase pairs
+    """
     print 'Reading %s ' % file_name
     file = open(file_name, 'r')
     phrase_table = set()
@@ -89,6 +144,12 @@ def read_phrase_table(file_name):
     return phrase_table
 
 def phrase_table_to_moses(file_name, out_name):
+    """Read a phrase table and write it to a file using the moses format
+    
+    Keywords arguments:
+    file_name -- name of file containing phrase table
+    out_name -- name of file for writing phrase table in moses format
+    """
     file = open(file_name, 'r')
     out = open(out_name, 'w')
     for line in file:

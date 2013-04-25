@@ -1,11 +1,24 @@
 # phrase pair extractor
 
+"""
+By Michael Cabot (6047262) and Sander Nugteren (6042023)
+"""
+
 import argparse
 from collections import Counter
 import sys
 
 def conditional_probabilities(phrase_pair_freqs, 
                               l1_phrase_freqs, l2_phrase_freqs):
+    """Calculate the conditional probability of phrase pairs in both directions.
+    
+    Keyword arguments:
+    phrase_pair_freqs -- counter of phrase pairs
+    l1_phrase_freqs -- counter of phrases in language 1
+    l2_phraes_freqs -- counter of phrases in lanuage 2
+    
+    Returns 2 dictionaries mapping a phrase pair to P(l1 | l2) and P(l2 | l1)
+    """
     l1_given_l2 = {}
     l2_given_l1 = {}
     for phrase_pair, freq in phrase_pair_freqs.iteritems():
@@ -15,6 +28,13 @@ def conditional_probabilities(phrase_pair_freqs,
     return l1_given_l2, l2_given_l1
 
 def phrase_probabilities(phrase_freqs):
+    """Calculate the probability of a phrase.
+    
+    Keyword arguments:
+    phrase_freqs -- counter of phrases
+    
+    Returns a dictionary mapping a phrase to its probabilitly
+    """
     freq_sum = sum(phrase_freqs.values())
     phrase_probs = {}
     for phrase, freq in phrase_freqs.iteritems():
@@ -23,6 +43,16 @@ def phrase_probabilities(phrase_freqs):
     return phrase_probs
 
 def joint_probabilities(l1_given_l2, l2_phrase_probs):
+    """Calculate the joint probability of a phrase pair:
+    P(l1, l2) = P(l1 | l2) * P(l2)
+    
+    Keyword arguments:
+    l1_given_l2 -- dictionary mapping a phrase pair (l1,l2) to its
+                   conditional probability P(l1 | l2)
+    l2_phrase_probs -- dictionary mapping a phraes to its probability
+    
+    Return a dictionary that maps a phrase pair to its joint probability
+    """
     joint_probs = {}
     for phrase, prob in l1_given_l2.iteritems():
         joint_probs[phrase] = prob * l2_phrase_probs[phrase[1]]
@@ -31,6 +61,18 @@ def joint_probabilities(l1_given_l2, l2_phrase_probs):
 
 def add_phrase_alignment(collection, phrase, max_length,
                          l1_length, l2_length):
+    """Add a phrase alignment to a collection if:
+    - its length is smaller or equal to the max length
+    - the alignment is a contituent of the sentences
+    
+    Keyword arguments:
+    collection -- a list or set
+    phrase -- a 4-tuple (min1,min2,max1,max2) denoting the range of
+              the constituents in language 1 and 2
+    max_length -- the maximum length of a phrase in the phrase alignment
+    l1_length -- the length of the sentence in language 1
+    l2_length -- the length of teh sentence in language 2
+    """
     if phrase and phrase[2] - phrase[0]+1 <= max_length \
               and phrase[3] - phrase[1]+1 <= max_length \
               and phrase[0] >= 0 and phrase[1] >= 0     \
@@ -45,6 +87,18 @@ def add_phrase_alignment(collection, phrase, max_length,
 def extract_phrase_pair_freqs(alignments_file, language1_file,
                               language2_file, 
                               max_length = float('inf')):
+    """Extract and count the frequency of all phrase pairs given an
+    alignment between sentences.
+    
+    Keyword arguments:
+    alignments_file -- file that contains the alignments
+    language1_file -- file containing sentences from language 1
+    language2_file -- file containing sentences from language 2
+    max_length -- maximum length of phrase pairs
+    
+    Returns counter of phrase-pairs, counter of phrases in language1
+            and counter of phrases in language2
+    """
     phrase_pair_freqs = Counter()
     l1_phrase_freqs = Counter()
     l2_phrase_freqs = Counter()
@@ -77,6 +131,16 @@ def extract_phrase_pair_freqs(alignments_file, language1_file,
     return phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs
 
 def extract_phrase_pairs_gen(phrase_alignments, l1, l2):
+    """Given alignments, extract phrase pairs from 2 sentences
+    
+    Keyword arguments:
+    phrase_alignments -- list of phraes alignments. A phrase alignment
+                         is a 4 tuple denoting the range of the constituents
+    l1 -- sentence in language 1
+    l2 -- sentence in language 2
+    
+    Yield a 2-tuple containing a phrase pair
+    """
     l1_words = l1.strip().split()
     l2_words = l2.strip().split()
     for min1, min2, max1, max2 in phrase_alignments:
@@ -84,6 +148,14 @@ def extract_phrase_pairs_gen(phrase_alignments, l1, l2):
                ' '.join(l2_words[min2:max2+1]))
     
 def str_to_alignments(string):
+    """Parse an alignment from a string
+    
+    Keyword arguments:
+    string -- contains alignment
+    
+    Return a set of 2-tuples. First value is index of word in language 1
+           second value is index of word in language 2
+    """
     string_list = string.strip().split()
     alignments = set()
     for a_str in string_list:
@@ -93,6 +165,18 @@ def str_to_alignments(string):
     return alignments
 
 def phrase_alignment_expansions(phrase_alignments, max_length = float('inf')):
+    """For each language find the words that are not covered with the given
+    phrase alignment.
+    E.g. phrase_alignments = [(0,0), (2,0)]
+    returns [1], []
+    because index 1 in sentence 1 is not covered.
+    
+    Keyword arguments:
+    phrase_alignments -- list of 2-tuples denoting the alignment between words
+    max_length -- maximum length of a phrase alignment
+    
+    Returns 2 lists of indexes that are not covered
+    """
     min1, min2, max1, max2 = phrase_range(phrase_alignments)
     if max1-min1+1 > max_length or max2-min2+1 > max_length:
         return [], []
@@ -108,6 +192,13 @@ def phrase_alignment_expansions(phrase_alignments, max_length = float('inf')):
     return range1, range2
     
 def phrase_range(phrase_alignments):
+    """Calcualte the range of a phrase alignment
+    
+    Keyword arguments:
+    phrase_alignments -- list of 2-tuples denoting the alignment between words
+    
+    Returns a 4-tuples denoting the range of the phrase alignment
+    """
     min1 = min2 = float('inf')
     max1 = max2 = float('-inf')
     for (a1, a2) in phrase_alignments:
@@ -124,6 +215,17 @@ def phrase_range(phrase_alignments):
 
 def extract_alignments(word_alignments, l1_length, l2_length,
                        max_length = float('inf')):
+    """Extracts all alignments between 2 sentences given a word alignment
+    
+    Keyword arguments:
+    word_alignemnts -- set of 2-tuples denoting alignment between words in 
+                       2 sentences
+    l1_length -- length of sentence 1
+    l2_length -- length of sentence 2
+    max_length -- maximum length of a phrase pair
+    
+    Returns set of 4-tuples denoting the range of phrase_alignments
+    """
     phrase_queue = set()
     #copy to use later for singletons
     word_alignments_orig = set(word_alignments)
@@ -206,6 +308,17 @@ def extract_alignments(word_alignments, l1_length, l2_length,
 
 def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
                          l1_given_l2, l2_given_l1):
+    """Write phrase pairs and their joint and conditional probabilities to a file
+    
+    Keyword arguments:
+    file_name -- name of file for writing
+    phrase_pairs -- list of phrase pairs
+    joint_probs -- dictionary mapping phrase pair to its joints probability
+    l1_given_l2 -- dictionary mapping phrase pair (l1,l2) to is conditional 
+                   probability P(l1 | l2)
+    l2_given_l1 -- dictionary mapping phrase pair (l1,l2) to is conditional 
+                   probability P(l2 | l1)
+    """
     out = open(file_name, 'w')
     for pair in phrase_pairs:
         joint = joint_probs[pair]
@@ -216,6 +329,13 @@ def phrase_pairs_to_file(file_name, phrase_pairs, joint_probs,
     out.close()
 
 def number_of_lines(file_name):
+    """Counts the number of lines in a file
+    
+    Keywords arguments:
+    file_name -- name of file
+    
+    Returns number of lines
+    """
     amount = 0
     file = open(file_name, 'r')
     for _ in file:
@@ -224,6 +344,13 @@ def number_of_lines(file_name):
     return amount
 
 def main():
+    """Read the following arguments from the cmd line:
+    - name of file containing the alignments
+    - name of file containing sentence of language 1
+    - name of file containing sentence of language 2
+    - name of file for writing output
+    - maximum length of a phrase pair
+    """
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-a", "--alignments",
         help="File containing alignments")
@@ -261,10 +388,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-    #str_align = '0-0 1-1 2-2 2-3 1-4 3-6 4-7'
-    #l1_length = 5
-    #l2_length = 8
-    #print extract_alignments(str_to_alignments(str_align), 
-    #                         l1_length, l2_length, 4)
-
-    
