@@ -77,20 +77,20 @@ def construct_phrase_pair(phrase, phrase_table, max_concat, concat_num = 0):
 
     return construct_phrase_pair(phrase, phrase_table, max_concat, concat_num+1)
     
-def all_splits(splits, str):
+def all_splits(splits, str_words):
     """Construct all possible splits of a phrase
     
     Keywords arguments:
     splits -- number of splits >= 0
-    str -- contains words separated by spaces
+    str_words -- contains words separated by spaces
     
     Returns a list of all possible splits where each element is a list of substrings
     """
     if splits == 0:
-        return [[str]]
+        return [[str_words]]
 
     split_words = []
-    words = str.split()
+    words = str_words.split()
     for i in xrange(1, len(words)):
         front = ' '.join(words[:i])
         back = ' '.join(words[i:])        
@@ -110,12 +110,12 @@ def read_phrase_table_gen(file_name):
     
     Yield phrase pair
     """
-    file = open(file_name, 'r')
-    for line in file:
+    doc = open(file_name, 'r')
+    for line in doc:
         phrase_pair, _, _, _ = ast.literal_eval(line.strip())
         yield phrase_pair
 
-    file.close()
+    doc.close()
 
 def read_phrase_table(file_name):
     """Read phrase pairs from a file
@@ -126,11 +126,11 @@ def read_phrase_table(file_name):
     Set of all phrase pairs
     """
     print 'Reading %s ' % file_name
-    file = open(file_name, 'r')
+    doc = open(file_name, 'r')
     phrase_table = set()
     num_lines = ppe.number_of_lines(file_name)
     i = 0
-    for line in file:
+    for line in doc:
         if i % (num_lines/100) is 0:
             sys.stdout.write('\r%d%%' % (i*100/num_lines,))
             sys.stdout.flush()
@@ -140,7 +140,7 @@ def read_phrase_table(file_name):
         i += 1
 
     sys.stdout.write('\n')
-    file.close()
+    doc.close()
     return phrase_table
 
 def phrase_table_to_moses(file_name, out_name):
@@ -150,17 +150,17 @@ def phrase_table_to_moses(file_name, out_name):
     file_name -- name of file containing phrase table
     out_name -- name of file for writing phrase table in moses format
     """
-    file = open(file_name, 'r')
+    doc = open(file_name, 'r')
     out = open(out_name, 'w')
-    for line in file:
+    for line in doc:
         phrase_pair, _, _, l2_given_l1 = ast.literal_eval(line.strip())
         l1, l2 = phrase_pair
         out.write('%s ||| %s ||| %s ||| |||\n' % (l1, l2, l2_given_l1))
 
-    file.close()
+    doc.close()
     out.close()
 
-if __name__ == '__main__':
+def main():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-t", "--trainfile",
         help="File containing phrases from the training set")
@@ -181,4 +181,8 @@ if __name__ == '__main__':
         coverage = compare(train_table, args.heldoutfile, max_concat)
         print 'max concat: %s' % max_concat
         print 'coverage: %s' % coverage
+
+
+if __name__ == '__main__':
+    main()
     

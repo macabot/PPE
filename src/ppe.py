@@ -256,7 +256,6 @@ def extract_alignments(word_alignments, l1_length, l2_length,
     while len(phrase_queue):
         p1 = phrase_queue.pop()
         new_p3 = set()
-        singletons = True
         #add singletons
         singleton = set([(x, y) for (x, y) in word_alignments_orig 
             if x is p1[0]-1])
@@ -337,10 +336,11 @@ def number_of_lines(file_name):
     Returns number of lines
     """
     amount = 0
-    file = open(file_name, 'r')
-    for _ in file:
+    doc = open(file_name, 'r')
+    for _ in doc:
         amount += 1
 
+    doc.close()
     return amount
 
 def main():
