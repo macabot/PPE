@@ -6,8 +6,7 @@ import ppe
 import sys
 import itertools
 
-def compare(train_file, held_out_file, max_concat):
-    train_table = read_phrase_table(train_file)
+def compare(train_table, held_out_file, max_concat):    
     held_out_table = read_phrase_table_gen(held_out_file)
     correct = 0
     incorrect = 0
@@ -109,5 +108,16 @@ if __name__ == '__main__':
     arg_parser.add_argument("-m", "--max_concat",
         help="File containing phrases from the test set")
     args = arg_parser.parse_args()
-    print compare(args.trainfile, args.heldoutfile, int(args.max_concat))
+    
+    max_concat_list = [int(m) for m in args.max_concat.split(',')]
+    
+    print 'train file: %s' % args.trainfile
+    print 'held-out file: %s' % args.heldoutfile
+    print 'max concat list: %s' % max_concat_list
+    
+    train_table = read_phrase_table(args.trainfile)
+    for max_concat in max_concat_list:
+        coverage = compare(train_table, args.heldoutfile, max_concat)
+        print 'max concat: %s' % max_concat
+        print 'coverage: %s' % coverage
     
