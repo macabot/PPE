@@ -162,11 +162,11 @@ def phrase_table_to_moses(file_name, out_name):
 
 def main():
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("-t", "--trainfile",
+    arg_parser.add_argument("-t", "--trainfile", required=True,
         help="File containing phrases from the training set")
-    arg_parser.add_argument("-v", "--heldoutfile",
+    arg_parser.add_argument("-v", "--heldoutfile", required=True,
         help="File containing phrases from the held out set")
-    arg_parser.add_argument("-m", "--max_concat",
+    arg_parser.add_argument("-m", "--max_concat", required=True,
         help="Maximum number of concatenations")
     args = arg_parser.parse_args()
     
