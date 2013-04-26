@@ -165,9 +165,9 @@ def main():
     arg_parser.add_argument("-t", "--trainfile",
         help="File containing phrases from the training set")
     arg_parser.add_argument("-v", "--heldoutfile",
-        help="File containing phrases from the test set")
+        help="File containing phrases from the held out set")
     arg_parser.add_argument("-m", "--max_concat",
-        help="File containing phrases from the test set")
+        help="Maximum number of concatenations")
     args = arg_parser.parse_args()
     
     max_concat_list = [int(m) for m in args.max_concat.split(',')]
