@@ -25,3 +25,8 @@ Command line arguments:
 - -t (--trainfile) File containing phrase table from the training set
 - -v (--heldoutfile) File containing phrase table from the test set
 - -m (--max_concat) Maximum number of concatenations to cover a phrase pair (0 <= m)
+
+Assignment 4
+===
+
+The folder 'model' can be found on the 'deze' server at: /home/6047262/model/
