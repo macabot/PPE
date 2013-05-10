@@ -5,7 +5,7 @@ Phrase Pair Extraction
 
 By Michael Cabot and Sander Nugteren
 
-ppe.py
+src/ppe.py
 ===
 
 Extracts phrase pairs.
@@ -19,7 +19,7 @@ Command line arguments:
 - -m (--max_length) Maximum length of phrase pairs (0 <= m)
 
 
-ppc.py
+src/ppc.py
 ===
 
 Calculates phrase pair coverage.
