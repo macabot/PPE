@@ -7,6 +7,7 @@ By Michael Cabot (6047262) and Sander Nugteren (6042023)
 import argparse
 from collections import Counter
 import sys
+import pickle
 
 def conditional_probabilities(phrase_pair_freqs,
                               l1_phrase_freqs, l2_phrase_freqs):
@@ -612,16 +613,18 @@ def lex_pairs_to_file(file_name, l1_given_l2, l2_given_l1, lex_file):
     old_lex.close()
     sys.stdout.write('\n')
 
-def phrase_pairs_to_file(file_name, l1_given_l2, l2_given_l1,
-        phrase_table_file):
+def phrase_pairs_to_file(file_name, phrase_l1_given_l2, phrase_l2_given_l1, lex_l1_given_l2,
+        lex_l2_given_l1, phrase_table_file):
     """Write phrase pairs and their conditional probabilities to a file.
 
     Keyword arguments:
     file_name -- name of file for writing
-    l1_given_l2 -- dictionary mapping phrase pair (l1,l2) to is conditional
-                   probability P(l1 | l2)
-    l2_given_l1 -- dictionary mapping phrase pair (l1,l2) to is conditional
-                   probability P(l2 | l1)
+    phrase_l1_given_l2 -- dictionary mapping phrase pair (l1,l2) to is conditional
+                   probability P(l1 | l2) for phrase pairs
+    phrase_l2_given_l1 -- dictionary mapping phrase pair (l1,l2) to is conditional
+                   probability P(l2 | l1) for phrase pairs
+    lex_l1_given_l2 -- same as phrsae_l1_given_l2 but for word pairs
+    lex_l2_given_l1 -- same as phrsae_l2_given_l1 but for word pairs
     phrase_table_file -- file containing phrase table
     """
     phrase_table = open("%s_phrase-table.txt" % file_name, 'w')
@@ -636,11 +639,11 @@ def phrase_pairs_to_file(file_name, l1_given_l2, l2_given_l1,
         try:
             fields = line.strip().split(" ||| ")
             pair = tuple(fields[0:2])
-            l1_l2 = l1_given_l2[pair]
-            l2_l1 = l2_given_l1[pair]
+            l1_l2 = phrase_l1_given_l2[pair]
+            l2_l1 = phrase_l2_given_l1[pair]
             alignment = str_to_alignments(fields[3])
-            lex_l1_l2, lex_l2_l1 = calc_lexical_weights(l1_given_l2, l2_given_l1,
-                pair, alignment)
+            lex_l1_l2, lex_l2_l1 = calc_lexical_weights(lex_l1_given_l2, 
+                lex_l2_given_l1, pair, alignment)
 
             phrase_table.write("%s ||| %s %s %s %s 2.718 ||| %s\n" %
                 (" ||| ".join(fields[0:2]), l1_l2, lex_l1_l2, l2_l1, lex_l2_l1,
@@ -659,9 +662,25 @@ def calc_lexical_weights(l1_given_l2, l2_given_l1, pair, alignment):
     l2_words = pair[1].split()
     lex_l1_l2 = 1
     lex_l2_l1 = 1
+    # aligned words
     for i1, i2 in alignment:
         lex_l1_l2 *= l1_given_l2[(l1_words[i1], l2_words[i2])]
         lex_l2_l1 *= l2_given_l1[(l1_words[i1], l2_words[i2])]
+
+    # words with no alignments
+    unaligned, unaligned2 = unaligned_words(alignment, len(l1_words),
+        len(l2_words))
+    unaligned.extend(unaligned2)
+    for i1, i2 in unaligned:
+        if i1 == None:
+            i1_word = 'NULL'
+            i2_word = l2_words[i2]
+        elif i2 == None:
+            i1_word = l1_words[i1]
+            i2_word = 'NULL'
+
+        lex_l1_l2 *= l1_given_l2[(i1_word, i2_word)]
+        lex_l2_l1 *= l2_given_l1[(i1_word, i2_word)]
 
     return lex_l1_l2, lex_l2_l1
 
@@ -736,6 +755,8 @@ def main():
         help="File containing phrase table.")
     arg_parser.add_argument("-lex", "--lex_pairs", required=True,
         help="File containing lexical pairs. e2f")
+    arg_parser.add_argument("-pickle", "--pickle", action='store_true', 
+        default=False, help="Pickle or unpickle freqs.")
 
     args = arg_parser.parse_args()
     alignments = args.alignments
@@ -763,27 +784,38 @@ def main():
     print ''
 
     print 'extract phrase pairs'
-    phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments, language1, language2,
-        max_length, sentence_weights)
+    if args.pickle:
+        try:
+            pickle_file = open("freqs.pickle", 'r')
+            phrase_freqs, lex_freqs = pickle.load(pickle_file)
+        except:
+            print 'Could not find/read freqs.pickle. Creating a new one.'
+            phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments, 
+                language1, language2, max_length, sentence_weights)
+            pickle_file = open("freqs.pickle", 'w')
+            pickle.dump((phrase_freqs, lex_freqs), pickle_file)
+    else:
+        phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments, language1, language2,
+            max_length, sentence_weights)
 
     print 'freqs to file'
     freqs_to_file("extracted_phrase_pairs.temp", phrase_freqs)
     freqs_to_file("extracted_lex_pairs.temp", lex_freqs)
     phrase_pair_freqs, l1_phrase_freqs, l2_phrase_freqs = phrase_freqs
     lex_pair_freqs, l1_lex_freqs, l2_lex_freqs = lex_freqs
-    
+
     print 'calculate phrase conditional probabilities'
     phrase_l1_given_l2, phrase_l2_given_l1 = conditional_probabilities(phrase_pair_freqs,
                               l1_phrase_freqs, l2_phrase_freqs)
-    
+
     print 'calculate lex conditional probabilities'
     lex_l1_given_l2, lex_l2_given_l1 = conditional_probabilities(lex_pair_freqs,
                               l1_lex_freqs, l2_lex_freqs)
 
     print 'phrase pairs to file'
-    phrase_pairs_to_file(output_name, phrase_l1_given_l2, phrase_l2_given_l1,
-        phrase_table_file)
-    
+    phrase_pairs_to_file(output_name, phrase_l1_given_l2, phrase_l2_given_l1, 
+        lex_l1_given_l2, lex_l2_given_l1, phrase_table_file)
+
     print 'lexical pairs to file'
     lex_pairs_to_file(output_name, lex_l1_given_l2, lex_l2_given_l1, lex_file)
 
