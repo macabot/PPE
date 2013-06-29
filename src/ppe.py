@@ -601,8 +601,8 @@ def lex_pairs_to_file(file_name, l1_given_l2, l2_given_l1, lex_file):
             pair = tuple(fields[0:2])
             l1_l2 = l1_given_l2[pair]
             l2_l1 = l2_given_l1[pair]
-            lex_f2e.write("%s %s %s\n" % (pair[1], pair[0], l2_l1))
-            lex_e2f.write("%s %s %s\n" % (pair[0], pair[1], l1_l2))
+            lex_f2e.write("%s %s %.7f\n" % (pair[1], pair[0], l1_l2))
+            lex_e2f.write("%s %s %.7f\n" % (pair[0], pair[1], l2_l1))
         except:
             print 'line: %s' % line
             print 'i: %s' % i
@@ -642,7 +642,7 @@ def phrase_pairs_to_file(file_name, phrase_l1_given_l2, phrase_l2_given_l1, lex_
             l1_l2 = phrase_l1_given_l2[pair]
             l2_l1 = phrase_l2_given_l1[pair]
             alignment = str_to_alignments(fields[3])
-            lex_l1_l2, lex_l2_l1 = calc_lexical_weights(lex_l1_given_l2, 
+            lex_l1_l2, lex_l2_l1 = calc_lexical_weights(lex_l1_given_l2,
                 lex_l2_given_l1, pair, alignment)
 
             phrase_table.write("%s ||| %s %s %s %s 2.718 ||| %s\n" %
@@ -755,7 +755,7 @@ def main():
         help="File containing phrase table.")
     arg_parser.add_argument("-lex", "--lex_pairs", required=True,
         help="File containing lexical pairs. e2f")
-    arg_parser.add_argument("-pickle", "--pickle", action='store_true', 
+    arg_parser.add_argument("-pickle", "--pickle", action='store_true',
         default=False, help="Pickle or unpickle freqs.")
 
     args = arg_parser.parse_args()
@@ -790,7 +790,7 @@ def main():
             phrase_freqs, lex_freqs = pickle.load(pickle_file)
         except:
             print 'Could not find/read freqs.pickle. Creating a new one.'
-            phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments, 
+            phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments,
                 language1, language2, max_length, sentence_weights)
             pickle_file = open("freqs.pickle", 'w')
             pickle.dump((phrase_freqs, lex_freqs), pickle_file)
@@ -813,7 +813,7 @@ def main():
                               l1_lex_freqs, l2_lex_freqs)
 
     print 'phrase pairs to file'
-    phrase_pairs_to_file(output_name, phrase_l1_given_l2, phrase_l2_given_l1, 
+    phrase_pairs_to_file(output_name, phrase_l1_given_l2, phrase_l2_given_l1,
         lex_l1_given_l2, lex_l2_given_l1, phrase_table_file)
 
     print 'lexical pairs to file'
