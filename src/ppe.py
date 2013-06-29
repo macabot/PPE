@@ -254,73 +254,6 @@ def phrase_range(phrase_alignments):
 
     return min1, min2, max1, max2
 
-def extract_alignments3(word_alignments, l1_length, l2_length, max_length):
-    """Extract all alignments between 2 sentence given a word alignment."""
-    phrase_alignments = set([])
-    prev_center = (-1, -1)
-    for i, center in enumerate(word_alignments):
-        if i > 0:
-            prev_center = word_alignments[i-1]
-
-        span1_max = l1_length - (prev_center[0]+1)
-        for span1_size in xrange(1, span1_max):
-            if span1_size > max_length:
-                break
-            for p1_min in xrange(center[0]-span1_size+1, center[0]+span1_size):
-                p1_max = p1_min + span1_size - 1
-                span2_max = l2_length - (prev_center[1]+1)
-                for span2_size in xrange(1, span2_max):
-                    if span2_size > max_length:
-                        break
-                    for p2_min in xrange(center[1]-span2_size+1,
-                            center[1]+span2_size):
-                        p2_max = p2_min + span2_size - 1
-
-                        phrase_alignment = (p1_min, p2_min, p1_max, p2_max)
-                        if is_valid_phrase_alignment(phrase_alignment,
-                                word_alignments, max_length):
-                            phrase_alignments.add(phrase_alignment)
-
-    # add word alignments
-    phrase_alignments |= set([phrase_range([a]) for a in word_alignments])
-    return phrase_alignments
-
-def extract_alignments2(word_alignments, l1_length, l2_length, max_length):
-    """Extract all alignments between 2 sentence given a word alignment.
-    phrase_range = (p1_min, p2_min, p1_max, p2_max)"""
-    phrase_alignments = set([])
-    for span1_size in xrange(1, l1_length):
-        if span1_size > max_length:
-            break
-        for p1_min in xrange(l1_length - span1_size):
-            p1_max = p1_min + span1_size - 1
-            for span2_size in xrange(1, l2_length):
-                if span2_size > max_length:
-                    break
-                for p2_min in xrange(l2_length - span2_size):
-                    p2_max = p2_min + span2_size - 1
-                    phrase_alignment = (p1_min, p2_min, p1_max, p2_max)
-                    if is_valid_phrase_alignment(phrase_alignment,
-                            word_alignments, max_length):
-                        phrase_alignments.add(phrase_alignment)
-
-    # add word alignments
-    phrase_alignments |= set([phrase_range([a]) for a in word_alignments])
-    return phrase_alignments
-    '''
-    for span_size in xrange(2, len(word_alignments)+1): # loop over spans sizes
-        for i in xrange(len(word_alignments)-span_size+1):
-            j = i+span_size
-            word_align_slice = word_alignments[i:j]
-            # add valid phrase alignments
-            if is_valid_phrase(word_align_slice, word_alignments, max_length):
-                phrase_alignments.add(phrase_range(word_align_slice))
-
-    # add word alignments
-    phrase_alignments |= set([phrase_range([a]) for a in word_alignments])
-    return phrase_alignments
-    '''
-
 def is_valid_phrase_alignment((min1, min2, max1, max2), word_alignments,
         max_length):
     if max1-min1+1 > max_length or max2-min2+1 > max_length:
@@ -354,113 +287,6 @@ def is_valid_phrase(word_align_slice, word_alignments, max_length):
             return False
 
     return True
-
-def extract_alignments_old(word_alignments, l1_length, l2_length,
-                       max_length): # TODO remove?
-    """Extracts all alignments between 2 sentences given a word alignment
-
-    Keyword arguments:
-    word_alignemnts -- set of 2-tuples denoting alignment between words in
-                       2 sentences
-    l1_length -- length of sentence 1
-    l2_length -- length of sentence 2
-    max_length -- maximum length of a phrase pair
-
-    Returns set of 4-tuples denoting the range of phrase_alignments
-    """
-    phrase_queue = set()
-    #copy to use later for singletons
-    word_alignments_orig = set(word_alignments)
-    # First form words into phrase pairs
-    while len(word_alignments):
-        phrase_alignment_init = word_alignments.pop()
-        phrase_alignment = set([phrase_alignment_init])
-        temp_word_alignments = set(word_alignments_orig)
-        expansion_points = phrase_alignment_expansions(phrase_alignment,
-            temp_word_alignments, max_length)
-        while expansion_points:
-            phrase_alignment |= expansion_points
-            temp_word_alignments -= expansion_points
-            expansion_points = phrase_alignment_expansions(phrase_alignment,
-                temp_word_alignments, max_length)
-
-        align_range = phrase_range(phrase_alignment)
-        add_phrase_alignment(phrase_queue, align_range, max_length,
-                             l1_length, l2_length)
-
-    # loop over phrase pairs to join them together into new ones
-    phrase_alignment_list = set() # TODO should be array?
-    # TODO turn phrase_alignment_list into phrase_queue untill it does not
-    # not change in size
-    '''
-    TODO dynamic programming
-    A = 0-0
-    B = 1-1, 1-2, 2-1, 2-3
-    C = 3-5
-    D = 4-4
-    E = 5-6
-    y=valid, n=invalid
-    y(A_E)
-    y(A_D)  y(B_E)
-    n(A_C)  y(B_D)  y(C_E)
-    y(A_B)  n(B_C)  y(C_D)  n(D_E)
-
-    create tree bottom-up
-    extract phrase pairs that are valid
-    '''
-    while len(phrase_queue):
-        p1 = phrase_queue.pop()
-        new_p3 = set()
-        #add singletons
-        singleton = set([(x, y) for (x, y) in word_alignments_orig
-            if x == p1[0]-1])
-        if not singleton:
-            p3 = p1[0]-1, p1[1], p1[2], p1[3]
-            add_phrase_alignment(new_p3, p3, max_length,
-                                 l1_length, l2_length)
-        singleton = set([(x, y) for (x, y) in word_alignments_orig
-            if x == p1[2]+1])
-        if not singleton:
-            p3 = p1[0], p1[1], p1[2]+1, p1[3]
-            add_phrase_alignment(new_p3, p3, max_length,
-                                 l1_length, l2_length)
-        singleton = set([(x, y) for (x, y) in word_alignments_orig
-            if y == p1[1]-1])
-        if not singleton:
-            p3 = p1[0], p1[1]-1, p1[2], p1[3]
-            add_phrase_alignment(new_p3, p3, max_length,
-                                 l1_length, l2_length)
-        singleton = set([(x, y) for (x, y) in word_alignments_orig
-            if y == p1[3]+1])
-        if not singleton:
-            p3 = p1[0], p1[1], p1[2], p1[3]+1
-            add_phrase_alignment(new_p3, p3, max_length,
-                                 l1_length, l2_length)
-
-        for p2 in phrase_queue:
-            p3 = None
-            if p1[0] == p2[2]+1 and p1[1] == p2[3]+1:
-                #p2 above, to the left of p1
-                p3 = p2[0], p2[1], p1[2], p1[3]
-            elif p1[2] == p2[0]-1 and p1[1] == p2[3]+1:
-                #p2 above, to the right of p1
-                p3 = p1[0], p2[1], p2[2], p1[3]
-            elif p1[0] == p2[2]+1 and p1[3] == p2[1]-1:
-                #p2 below, to the left of p1
-                p3 = p2[0], p1[1], p1[2], p2[3]
-            elif p1[2] == p2[0]-1 and p1[3] == p2[1]-1:
-                #p2 below, to the right of p1
-                p3 = p1[0], p1[1], p2[2], p2[3]
-            # if p3 exists and is smaller or equal to the max length
-            add_phrase_alignment(new_p3, p3, max_length, l1_length, l2_length)
-
-        phrase_alignment_list.add(p1)
-        phrase_queue |= new_p3
-
-    # add word alignments
-    phrase_alignment_list |= set([phrase_range([a])
-                                  for a in word_alignments_orig])
-    return phrase_alignment_list
 
 def extract_alignments(word_alignments, l1_length, l2_length, max_length):
     """Extracts all alignments between 2 sentences given a word alignment
@@ -788,12 +614,15 @@ def main():
         try:
             pickle_file = open("freqs.pickle", 'r')
             phrase_freqs, lex_freqs = pickle.load(pickle_file)
+            pickle_file.close()
+            print 'Freqs read from freqs.pickle.'
         except:
             print 'Could not find/read freqs.pickle. Creating a new one.'
             phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments,
                 language1, language2, max_length, sentence_weights)
             pickle_file = open("freqs.pickle", 'w')
             pickle.dump((phrase_freqs, lex_freqs), pickle_file)
+            pickle_file.close()
     else:
         phrase_freqs, lex_freqs = extract_phrase_pair_freqs(alignments, language1, language2,
             max_length, sentence_weights)
